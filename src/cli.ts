@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import chokidar from 'chokidar'
+import { realpathSync } from 'node:fs'
 import { performance } from 'node:perf_hooks'
 import { relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { run, runWithWatch } from './index.js'
 
 const WATCH_EVENTS = new Set(['add', 'addDir', 'change', 'unlink', 'unlinkDir'])
@@ -111,7 +112,7 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
       const { watchFiles } = await runWithWatch(entryPath, { argv: scriptArgv, sourcemap: true })
       updateWatchFiles(watchFiles)
       const duration = Math.round(performance.now() - start)
-      console.log(`[rono] Ran ${relative(process.cwd(), entryPath)} in ${duration}ms`)
+      console.log(`[gono] Ran ${relative(process.cwd(), entryPath)} in ${duration}ms`)
     } catch (error) {
       if (error instanceof Error) {
         console.error(error.stack ?? error.message)
@@ -154,7 +155,7 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
     if (closing) return
     if (!WATCH_EVENTS.has(event)) return
     const relativePath = relative(process.cwd(), changedPath)
-    console.log(`[rono] ${event} ${relativePath}`)
+    console.log(`[gono] ${event} ${relativePath}`)
     scheduleRestart()
   })
 
@@ -170,7 +171,7 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
     running = null
   }
 
-  console.log('[rono] Watching for changes...')
+  console.log('[gono] Watching for changes...')
 
   await closePromise
 }
@@ -179,7 +180,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   const { entry, entryArgs, watch } = parseArguments(argv)
 
   if (!entry) {
-    console.error('Usage: rono [watch|--watch|-w] <entry-file> [...args]')
+    console.error('Usage: gono [watch|--watch|-w] <entry-file> [...args]')
     return 1
   }
 
@@ -206,7 +207,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 
 let invokedAsScript = false
 if (typeof process.argv[1] === 'string') {
-  invokedAsScript = pathToFileURL(process.argv[1]).href === import.meta.url
+  try {
+    const argvRealPath = realpathSync(process.argv[1])
+    const scriptRealPath = realpathSync(fileURLToPath(import.meta.url))
+    invokedAsScript = argvRealPath === scriptRealPath
+  } catch {
+    invokedAsScript = false
+  }
+
+  if (!invokedAsScript) {
+    invokedAsScript = pathToFileURL(process.argv[1]).href === import.meta.url
+  }
 }
 
 if (invokedAsScript) {

@@ -11,6 +11,6 @@
   "license": "ISC",
   "packageManager": "pnpm@10.9.0",
   "devDependencies": {
-    "gono": "workspace:*"
+    "gono": "0.0.1-alpha.1"
   }
 }

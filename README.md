@@ -11,7 +11,7 @@
 
 ## Requirements
 
-- Node.js **18.12.0 or newer** (matching the engine range of Rolldown bindings).
+- Node.js **16.0.0 or newer** (matching the engine range of Rolldown bindings).
 
 ## Installation
 

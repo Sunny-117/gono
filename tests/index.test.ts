@@ -1,7 +1,7 @@
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { main } from '../src/cli'
 import { run, runWithWatch } from '../src/index'
 
@@ -15,7 +15,7 @@ afterEach(async () => {
   await rm(workspace, { recursive: true, force: true })
 })
 
-test('run executes TypeScript modules and returns exports', async () => {
+it('run executes TypeScript modules and returns exports', async () => {
   const entry = join(workspace, 'hello.ts')
   await writeFile(
     entry,
@@ -27,12 +27,12 @@ export default function greet(name: string): string {
     'utf8',
   )
 
-  const module = (await run(entry)) as { answer: number; default: (name: string) => string }
+  const module = (await run(entry)) as { answer: number, default: (name: string) => string }
   expect(module.answer).toBe(42)
   expect(module.default('Rolldown')).toBe('Hello Rolldown')
 })
 
-test('cli runs entry file and forwards arguments', async () => {
+it('cli runs entry file and forwards arguments', async () => {
   const entry = join(workspace, 'cli-entry.ts')
   await writeFile(
     entry,
@@ -56,7 +56,7 @@ console.log('cli-ran')
   expect(logs).toContain('cli-ran')
 })
 
-test('runWithWatch returns watch files along with module exports', async () => {
+it('runWithWatch returns watch files along with module exports', async () => {
   const dependency = join(workspace, 'watch-dependency.ts')
   await writeFile(
     dependency,

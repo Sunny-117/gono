@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import chokidar from 'chokidar'
 import { realpathSync } from 'node:fs'
-import { performance } from 'node:perf_hooks'
 import { relative, resolve } from 'node:path'
+import { performance } from 'node:perf_hooks'
+import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import chokidar from 'chokidar'
 import { run, runWithWatch } from './index.js'
 
 const WATCH_EVENTS = new Set(['add', 'addDir', 'change', 'unlink', 'unlinkDir'])
@@ -50,7 +51,8 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
   const watcher = chokidar.watch(entryPath, { ignoreInitial: true })
 
   const finalize = async () => {
-    if (closing) return
+    if (closing)
+      return
     closing = true
     if (restartTimer) {
       clearTimeout(restartTimer)
@@ -59,7 +61,8 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
     if (running) {
       try {
         await running
-      } catch {
+      }
+      catch {
         // ignore errors during shutdown
       }
     }
@@ -113,17 +116,20 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
       updateWatchFiles(watchFiles)
       const duration = Math.round(performance.now() - start)
       console.log(`[gono] Ran ${relative(process.cwd(), entryPath)} in ${duration}ms`)
-    } catch (error) {
+    }
+    catch (error) {
       if (error instanceof Error) {
         console.error(error.stack ?? error.message)
-      } else {
+      }
+      else {
         console.error(error)
       }
     }
   }
 
   const scheduleRestart = () => {
-    if (closing) return
+    if (closing)
+      return
     restartPending = true
 
     if (restartTimer) {
@@ -152,22 +158,26 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
   }
 
   watcher.on('all', (event, changedPath) => {
-    if (closing) return
-    if (!WATCH_EVENTS.has(event)) return
+    if (closing)
+      return
+    if (!WATCH_EVENTS.has(event))
+      return
     const relativePath = relative(process.cwd(), changedPath)
     console.log(`[gono] ${event} ${relativePath}`)
     scheduleRestart()
   })
 
   watcher.on('error', (error) => {
-    if (closing) return
+    if (closing)
+      return
     console.error(error)
   })
 
   running = runEntry()
   try {
     await running
-  } finally {
+  }
+  finally {
     running = null
   }
 
@@ -195,10 +205,12 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   try {
     await run(entryPath, { argv: scriptArgv, sourcemap: true })
     return 0
-  } catch (error) {
+  }
+  catch (error) {
     if (error instanceof Error) {
       console.error(error.stack ?? error.message)
-    } else {
+    }
+    else {
       console.error(error)
     }
     return 1
@@ -211,7 +223,8 @@ if (typeof process.argv[1] === 'string') {
     const argvRealPath = realpathSync(process.argv[1])
     const scriptRealPath = realpathSync(fileURLToPath(import.meta.url))
     invokedAsScript = argvRealPath === scriptRealPath
-  } catch {
+  }
+  catch {
     invokedAsScript = false
   }
 

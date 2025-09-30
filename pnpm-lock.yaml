@@ -37,6 +37,12 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(@types/node@20.16.3)
 
+  playground:
+    devDependencies:
+      gono:
+        specifier: workspace:*
+        version: link:..
+
 packages:
 
   '@aashutoshrathi/word-wrap@1.2.6':

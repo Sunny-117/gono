@@ -1,3 +1,3 @@
-import { Sunny-117 } from '@Sunny-117/eslint-config'
+import { antfu } from '@antfu/eslint-config'
 
-export default Sunny-117()
+export default antfu()

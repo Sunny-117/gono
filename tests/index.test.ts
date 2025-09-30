@@ -1,14 +1,14 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { main } from '../src/cli'
-import { run } from '../src/index'
+import { run, runWithWatch } from '../src/index'
 
 let workspace: string
 
 beforeEach(async () => {
-  workspace = await mkdtemp(join(tmpdir(), 'rono-test-'))
+  workspace = await mkdtemp(join(tmpdir(), 'jsno-test-'))
 })
 
 afterEach(async () => {
@@ -54,4 +54,30 @@ console.log('cli-ran')
 
   expect(exitCode).toBe(0)
   expect(logs).toContain('cli-ran')
+})
+
+test('runWithWatch returns watch files along with module exports', async () => {
+  const dependency = join(workspace, 'watch-dependency.ts')
+  await writeFile(
+    dependency,
+    `export const message: string = 'dep'
+`,
+    'utf8',
+  )
+
+  const entry = join(workspace, 'watch-entry.ts')
+  await writeFile(
+    entry,
+    `import { message } from './watch-dependency.ts'
+
+export const value = 'entry:' + message
+`,
+    'utf8',
+  )
+
+  const result = await runWithWatch<{ value: string }>(entry)
+  const [entryRealpath, dependencyRealpath] = await Promise.all([realpath(entry), realpath(dependency)])
+
+  expect(result.module.value).toBe('entry:dep')
+  expect(result.watchFiles).toEqual(expect.arrayContaining([entryRealpath, dependencyRealpath]))
 })

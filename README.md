@@ -1,3 +1,2 @@
-# rono [![npm](https://img.shields.io/npm/v/rono.svg)](https://npmjs.com/package/rono)
+# gono [![npm](https://img.shields.io/npm/v/gono.svg)](https://npmjs.com/package/gono)
 
-[![Unit Test](https://github.com/Sunny-117/rono/actions/workflows/unit-test.yml/badge.svg)](https://github.com/Sunny-117/rono/actions/workflows/unit-test.yml)

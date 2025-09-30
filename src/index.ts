@@ -46,7 +46,18 @@ export interface RunOptions extends BundleOptions {
   argv?: string[]
 }
 
-export async function bundle(entry: string, options: BundleOptions = {}): Promise<string> {
+interface BundleArtifacts {
+  code: string
+  entryPath: string
+  sourceUrl: string
+  watchFiles: string[]
+}
+
+function isFilePath(id: string): boolean {
+  return !id.startsWith('\0') && !id.startsWith('virtual:')
+}
+
+async function createBundle(entry: string, options: BundleOptions = {}): Promise<BundleArtifacts> {
   const entryPath = resolve(entry)
   const { rolldown } = await loadRolldown()
   const bundleObject = await rolldown({
@@ -68,29 +79,77 @@ export async function bundle(entry: string, options: BundleOptions = {}): Promis
       throw new Error('Failed to produce output chunk')
     }
 
-    return chunk.code
+    const watchFiles = new Set<string>()
+    if (chunk.modules) {
+      for (const id of Object.keys(chunk.modules)) {
+        if (isFilePath(id)) {
+          watchFiles.add(resolve(id))
+        }
+      }
+    }
+    watchFiles.add(entryPath)
+
+    return {
+      code: chunk.code,
+      entryPath,
+      sourceUrl: pathToFileURL(entryPath).href,
+      watchFiles: [...watchFiles],
+    }
   } finally {
     await bundleObject.close()
   }
 }
 
-export async function run<TModule extends Record<string, unknown> = Record<string, unknown>>(
-  entry: string,
-  options: RunOptions = {},
-): Promise<TModule> {
-  const entryPath = resolve(entry)
-  const code = await bundle(entryPath, options)
-  const sourceUrl = pathToFileURL(entryPath).href
+export async function bundle(entry: string, options: BundleOptions = {}): Promise<string> {
+  const { code } = await createBundle(entry, options)
+  return code
+}
+
+interface ExecuteOptions {
+  argv: string[]
+  code: string
+  sourceUrl: string
+}
+
+async function executeModule<TModule extends Record<string, unknown>>({
+  argv,
+  code,
+  sourceUrl,
+}: ExecuteOptions): Promise<TModule> {
   const payload = `${code}\n//# sourceURL=${sourceUrl}`
-  const dataUrl = `data:text/javascript;base64,${Buffer.from(payload, 'utf8').toString('base64')}`
+  const uniqueSuffix = `#gono=${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+  const dataUrl = `data:text/javascript;base64,${Buffer.from(payload, 'utf8').toString('base64')}${uniqueSuffix}`
 
   const originalArgv = process.argv
-  const nextArgv = options.argv ?? [process.execPath, entryPath]
-  process.argv = nextArgv
+  process.argv = argv
 
   try {
     return (await import(dataUrl)) as TModule
   } finally {
     process.argv = originalArgv
   }
+}
+
+export interface RunWithWatchResult<TModule> {
+  module: TModule
+  watchFiles: string[]
+}
+
+export async function run<TModule extends Record<string, unknown> = Record<string, unknown>>(
+  entry: string,
+  options: RunOptions = {},
+): Promise<TModule> {
+  const { module } = await runWithWatch<TModule>(entry, options)
+  return module
+}
+
+export async function runWithWatch<
+  TModule extends Record<string, unknown> = Record<string, unknown>,
+>(entry: string, options: RunOptions = {}): Promise<RunWithWatchResult<TModule>> {
+  const { code, entryPath, sourceUrl, watchFiles } = await createBundle(entry, options)
+  const argv = options.argv ?? [process.execPath, entryPath]
+
+  const module = await executeModule<TModule>({ argv, code, sourceUrl })
+
+  return { module, watchFiles }
 }

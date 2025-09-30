@@ -15,22 +15,41 @@ const WATCH_EVENTS = new Set(['add', 'addDir', 'change', 'unlink', 'unlinkDir'])
 interface CLIArguments {
   entry?: string
   entryArgs: string[]
+  unknownOptions: string[]
   watch: boolean
 }
 
 function resolveArguments(argv: readonly string[], hasWatchOption: boolean): CLIArguments {
   let watch = hasWatchOption
   const normalized: string[] = []
+  const unknownOptions: string[] = []
+  let entryResolved = false
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
 
-    if (value === '--watch' || value === '-w') {
-      watch = true
-      continue
+    if (!entryResolved) {
+      if (value === '--watch' || value === '-w') {
+        watch = true
+        continue
+      }
+
+      if (value === '--') {
+        normalized.push(...argv.slice(index + 1))
+        entryResolved = normalized.length > 0
+        break
+      }
+
+      if (value.startsWith('-') && value.length > 1) {
+        unknownOptions.push(value)
+        continue
+      }
     }
 
     normalized.push(value)
+    if (!entryResolved) {
+      entryResolved = true
+    }
   }
 
   let entry = normalized.shift()
@@ -40,20 +59,7 @@ function resolveArguments(argv: readonly string[], hasWatchOption: boolean): CLI
     entry = normalized.shift()
   }
 
-  return { entry, entryArgs: normalized, watch }
-}
-
-function getUnknownOptionNames(options: Record<string, unknown>, knownOptionNames: readonly string[]): string[] {
-  const known = new Set(['--', ...knownOptionNames])
-  return Object.keys(options).filter(name => !known.has(name))
-}
-
-function formatOptionName(option: string): string {
-  if (option.length === 1) {
-    return `-${option}`
-  }
-  const dashed = option.replace(/[A-Z]/g, character => `-${character.toLowerCase()}`)
-  return `--${dashed}`
+  return { entry, entryArgs: normalized, unknownOptions, watch }
 }
 
 async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void> {
@@ -213,15 +219,6 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   cli.showVersionOnExit = false
 
   const parsed = cli.parse(['node', 'gono', ...argv], { run: false })
-  const knownOptionNames = cli.globalCommand.options.flatMap(option => option.names)
-  const unknownOptionNames = getUnknownOptionNames(parsed.options, knownOptionNames)
-
-  if (unknownOptionNames.length > 0) {
-    const formattedOptions = unknownOptionNames.map(formatOptionName).join(', ')
-    const label = unknownOptionNames.length > 1 ? 'options' : 'option'
-    console.error(`[gono] Unknown ${label}: ${formattedOptions}\n[gono] Run \`gono --help\` to see available options.`)
-    return 1
-  }
 
   if (parsed.options.help) {
     cli.outputHelp()
@@ -233,7 +230,13 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     return 0
   }
 
-  const { entry, entryArgs, watch } = resolveArguments(argv, Boolean(parsed.options.watch))
+  const { entry, entryArgs, unknownOptions, watch } = resolveArguments(argv, Boolean(parsed.options.watch))
+
+  if (unknownOptions.length > 0) {
+    const label = unknownOptions.length > 1 ? 'options' : 'option'
+    console.error(`[gono] Unknown ${label}: ${unknownOptions.join(', ')}\n[gono] Run \`gono --help\` to see available options.`)
+    return 1
+  }
 
   if (!entry) {
     cli.outputHelp()

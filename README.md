@@ -11,7 +11,7 @@
 
 ## Requirements
 
-- Node.js **16.0.0 or newer** (matching the engine range of Rolldown bindings).
+- Node.js **20.19.4 or newer** (matching the minimum engine version supported by Rolldown bindings).
 
 ## Installation
 
@@ -44,7 +44,7 @@ The CLI resolves the entry path, bundles it with Rolldown, and executes the outp
 
 Recent versions of Node.js add `node --watch` and experimental TypeScript execution, but gono still fills several gaps:
 
-- **Consistent support from Node 18+** – no need to require the very latest Node release or toggle experimental flags; gono works anywhere Rolldown runs.
+- **Consistent support from Node 20.19.4+** – no need to require the very latest Node release or toggle experimental flags; gono works anywhere Rolldown runs.
 - **Bundler-grade transforms** – Rolldown handles modern TypeScript/JS syntax, JSX, decorators, and path aliases the same way as production builds, avoiding surprises between dev and build stages.
 - **Dependency-aware watch mode** – gono watches only the files that Rolldown discovers, debounces restarts, and prints uniform feedback so long-running scripts remain readable.
 - **Programmatic control** – libraries or tooling can call `runWithWatch` to embed the same workflow without shelling out to `node`.

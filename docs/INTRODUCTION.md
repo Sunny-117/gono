@@ -56,7 +56,7 @@ const { module, watchFiles } = await runWithWatch('src/task.ts')
 
 ## 为什么在 Node 原生支持 TypeScript / watch 后仍然需要 gono
 
-- **兼容范围更广**：gono 依赖 Rolldown，可在 Node 18+ 直接运行，不要求启用最新实验特性或升级到 22+。
+- **兼容范围更广**：gono 依赖 Rolldown，可在 Node 20.19.4+ 直接运行，不要求启用最新实验特性或升级到 22+。
 - **与生产一致的打包管线**：Rolldown 提供 Tree-shaking、别名解析、装饰器等支持，使开发时的行为与最终构建一致。
 - **依赖图驱动的 Watch**：只监听 Rolldown 实际引用的文件，并带有去抖逻辑与统一日志输出，适合保持脚本输出的可读性。
 - **可编程能力**：`runWithWatch` 等 API 能嵌入到 CLI、测试或自动化框架中，而不仅是命令行一次性使用。

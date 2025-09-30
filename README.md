@@ -71,6 +71,8 @@ All APIs accept the same `sourcemap` option as the CLI. `runWithWatch` returns b
 
 Clone the repository and install dependencies with your preferred package manager (`pnpm install` is recommended). The main scripts are:
 
+**Node.js Version v20.19.4+**
+
 ```bash
 pnpm test       # run vitest test suite
 pnpm build      # produce distribution files via tsup
@@ -81,4 +83,3 @@ pnpm typecheck  # ensure TypeScript types are sound
 ## License
 
 MIT © Sunny-117
-

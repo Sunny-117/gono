@@ -5,28 +5,25 @@ import { relative, resolve } from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import cac from 'cac'
 import chokidar from 'chokidar'
+import pkg from '../package.json' assert { type: 'json' }
 import { run, runWithWatch } from './index.js'
 
 const WATCH_EVENTS = new Set(['add', 'addDir', 'change', 'unlink', 'unlinkDir'])
 
-interface ParsedArguments {
+interface CLIArguments {
   entry?: string
   entryArgs: string[]
   watch: boolean
 }
 
-function parseArguments(argv: string[]): ParsedArguments {
-  let watch = false
+function resolveArguments(argv: readonly string[], hasWatchOption: boolean): CLIArguments {
+  let watch = hasWatchOption
   const normalized: string[] = []
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
-
-    if (index === 0 && value === 'watch') {
-      watch = true
-      continue
-    }
 
     if (value === '--watch' || value === '-w') {
       watch = true
@@ -36,9 +33,14 @@ function parseArguments(argv: string[]): ParsedArguments {
     normalized.push(value)
   }
 
-  const [entry, ...entryArgs] = normalized
+  let entry = normalized.shift()
 
-  return { entry, entryArgs, watch }
+  if (!watch && entry === 'watch') {
+    watch = true
+    entry = normalized.shift()
+  }
+
+  return { entry, entryArgs: normalized, watch }
 }
 
 async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void> {
@@ -187,23 +189,45 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
 }
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
-  const { entry, entryArgs, watch } = parseArguments(argv)
+  const cli = cac('gono')
+
+  cli
+    .usage('[options] <entry-file> [...args]')
+    .option('--watch, -w', 'Run the entry file in watch mode')
+
+  cli.help()
+  cli.version(pkg.version)
+  cli.showVersionOnExit = false
+
+  const parsed = cli.parse(['node', 'gono', ...argv], { run: false })
+
+  if (parsed.options.help) {
+    cli.outputHelp()
+    return 0
+  }
+
+  if (parsed.options.version) {
+    console.log(pkg.version)
+    return 0
+  }
+
+  const { entry, entryArgs, watch } = resolveArguments(argv, Boolean(parsed.options.watch))
 
   if (!entry) {
-    console.error('Usage: gono [watch|--watch|-w] <entry-file> [...args]')
+    cli.outputHelp()
     return 1
   }
 
   const entryPath = resolve(entry)
   const scriptArgv = [process.execPath, entryPath, ...entryArgs]
 
-  if (watch) {
-    await startWatch(entryPath, scriptArgv)
-    return 0
-  }
-
   try {
-    await run(entryPath, { argv: scriptArgv, sourcemap: true })
+    if (watch) {
+      await startWatch(entryPath, scriptArgv)
+    }
+    else {
+      await run(entryPath, { argv: scriptArgv, sourcemap: true })
+    }
     return 0
   }
   catch (error) {

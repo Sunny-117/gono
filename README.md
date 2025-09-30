@@ -40,6 +40,16 @@ npx gono --watch src/server.ts
 
 The CLI resolves the entry path, bundles it with Rolldown, and executes the output in a Node.js runtime. When watch mode is enabled, gono listens to all imported files, logs file system events, and reruns the bundle after a short debounce.
 
+## Why gono when Node has `--watch` and TypeScript loaders?
+
+Recent versions of Node.js add `node --watch` and experimental TypeScript execution, but gono still fills several gaps:
+
+- **Consistent support from Node 18+** – no need to require the very latest Node release or toggle experimental flags; gono works anywhere Rolldown runs.
+- **Bundler-grade transforms** – Rolldown handles modern TypeScript/JS syntax, JSX, decorators, and path aliases the same way as production builds, avoiding surprises between dev and build stages.
+- **Dependency-aware watch mode** – gono watches only the files that Rolldown discovers, debounces restarts, and prints uniform feedback so long-running scripts remain readable.
+- **Programmatic control** – libraries or tooling can call `runWithWatch` to embed the same workflow without shelling out to `node`.
+- **Single binary UX** – no manual `--loader`, `--watch`, or config wiring; `gono` encapsulates the setup for teams that just want `gono entry.ts` to work.
+
 ## Programmatic API
 
 ```ts

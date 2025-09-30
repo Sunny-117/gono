@@ -54,6 +54,14 @@ const { module, watchFiles } = await runWithWatch('src/task.ts')
 - `run(entry, options)`：执行入口文件并返回模块导出，自动处理 `argv`。
 - `runWithWatch(entry, options)`：在执行的基础上返回依赖文件列表，便于集成其他监听方案。
 
+## 为什么在 Node 原生支持 TypeScript / watch 后仍然需要 gono
+
+- **兼容范围更广**：gono 依赖 Rolldown，可在 Node 18+ 直接运行，不要求启用最新实验特性或升级到 22+。
+- **与生产一致的打包管线**：Rolldown 提供 Tree-shaking、别名解析、装饰器等支持，使开发时的行为与最终构建一致。
+- **依赖图驱动的 Watch**：只监听 Rolldown 实际引用的文件，并带有去抖逻辑与统一日志输出，适合保持脚本输出的可读性。
+- **可编程能力**：`runWithWatch` 等 API 能嵌入到 CLI、测试或自动化框架中，而不仅是命令行一次性使用。
+- **零配置的一致体验**：无需记忆 `node --loader ... --watch` 的组合命令，团队可直接共享 `gono entry.ts` 的简洁指令。
+
 ## 适用场景
 
 - 需要快速运行 TypeScript 脚本或原型验证的 Node.js 项目。

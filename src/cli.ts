@@ -43,6 +43,19 @@ function resolveArguments(argv: readonly string[], hasWatchOption: boolean): CLI
   return { entry, entryArgs: normalized, watch }
 }
 
+function getUnknownOptionNames(options: Record<string, unknown>, knownOptionNames: readonly string[]): string[] {
+  const known = new Set(['--', ...knownOptionNames])
+  return Object.keys(options).filter(name => !known.has(name))
+}
+
+function formatOptionName(option: string): string {
+  if (option.length === 1) {
+    return `-${option}`
+  }
+  const dashed = option.replace(/[A-Z]/g, character => `-${character.toLowerCase()}`)
+  return `--${dashed}`
+}
+
 async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void> {
   let closing = false
   let restartPending = false
@@ -200,6 +213,15 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   cli.showVersionOnExit = false
 
   const parsed = cli.parse(['node', 'gono', ...argv], { run: false })
+  const knownOptionNames = cli.globalCommand.options.flatMap(option => option.names)
+  const unknownOptionNames = getUnknownOptionNames(parsed.options, knownOptionNames)
+
+  if (unknownOptionNames.length > 0) {
+    const formattedOptions = unknownOptionNames.map(formatOptionName).join(', ')
+    const label = unknownOptionNames.length > 1 ? 'options' : 'option'
+    console.error(`[gono] Unknown ${label}: ${formattedOptions}\n[gono] Run \`gono --help\` to see available options.`)
+    return 1
+  }
 
   if (parsed.options.help) {
     cli.outputHelp()

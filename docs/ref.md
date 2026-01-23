@@ -17,3 +17,5 @@ process.exit(spawnSync('node', ['-r', register, ...argv], { stdio: 'inherit' }).
 
 // 而 esmo.mjs 使用了 esbuild-node-loader 来加载文件
 ```
+
+[esbuild-register](https://chatgpt.com/c/69732ba7-235c-8322-9312-007959408a5a)

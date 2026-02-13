@@ -9,6 +9,7 @@ import cac from 'cac'
 import chokidar from 'chokidar'
 import pkg from '../package.json' assert { type: 'json' }
 import { run, runWithWatch } from './index.js'
+import { logger } from './logger.js'
 
 const WATCH_EVENTS = new Set(['add', 'addDir', 'change', 'unlink', 'unlinkDir'])
 
@@ -136,15 +137,10 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
       const { watchFiles } = await runWithWatch(entryPath, { argv: scriptArgv, sourcemap: true })
       updateWatchFiles(watchFiles)
       const duration = Math.round(performance.now() - start)
-      console.log(`[gono] Ran ${relative(process.cwd(), entryPath)} in ${duration}ms`)
+      logger.success(relative(process.cwd(), entryPath), duration)
     }
     catch (error) {
-      if (error instanceof Error) {
-        console.error(error.stack ?? error.message)
-      }
-      else {
-        console.error(error)
-      }
+      logger.error(error)
     }
   }
 
@@ -173,7 +169,7 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
           }
         })
         .catch((error) => {
-          console.error(error)
+          logger.error(error)
         })
     }, 50)
   }
@@ -184,14 +180,14 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
     if (!WATCH_EVENTS.has(event))
       return
     const relativePath = relative(process.cwd(), changedPath)
-    console.log(`[gono] ${event} ${relativePath}`)
+    logger.change(event, relativePath)
     scheduleRestart()
   })
 
   watcher.on('error', (error) => {
     if (closing)
       return
-    console.error(error)
+    logger.error(error)
   })
 
   running = runEntry()
@@ -202,7 +198,7 @@ async function startWatch(entryPath: string, scriptArgv: string[]): Promise<void
     running = null
   }
 
-  console.log('[gono] Watching for changes...')
+  logger.watching()
 
   await closePromise
 }
@@ -226,15 +222,14 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   }
 
   if (parsed.options.version) {
-    console.log(pkg.version)
+    logger.version(pkg.version)
     return 0
   }
 
   const { entry, entryArgs, unknownOptions, watch } = resolveArguments(argv, Boolean(parsed.options.watch))
 
   if (unknownOptions.length > 0) {
-    const label = unknownOptions.length > 1 ? 'options' : 'option'
-    console.error(`[gono] Unknown ${label}: ${unknownOptions.join(', ')}\n[gono] Run \`gono --help\` to see available options.`)
+    logger.unknownOptions(unknownOptions)
     return 1
   }
 
@@ -256,12 +251,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     return 0
   }
   catch (error) {
-    if (error instanceof Error) {
-      console.error(error.stack ?? error.message)
-    }
-    else {
-      console.error(error)
-    }
+    logger.error(error)
     return 1
   }
 }

@@ -1,5 +1,7 @@
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { builtinModules } from 'node:module'
-import { resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { OutputChunk } from 'rolldown'
 
@@ -117,16 +119,26 @@ async function executeModule<TModule extends Record<string, unknown>>({
   sourceUrl,
 }: ExecuteOptions): Promise<TModule> {
   const payload = `${code}\n//# sourceURL=${sourceUrl}`
-  const uniqueSuffix = `#gono=${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
-  const dataUrl = `data:text/javascript;base64,${Buffer.from(payload, 'utf8').toString('base64')}${uniqueSuffix}`
+  const uniqueSuffix = `gono-${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+  const tempDir = join(tmpdir(), uniqueSuffix)
+  const tempFile = join(tempDir, 'module.mjs')
 
-  const originalArgv = process.argv
-  process.argv = argv
+  await mkdir(tempDir, { recursive: true })
 
   try {
-    return (await import(dataUrl)) as TModule
+    await writeFile(tempFile, payload, 'utf8')
+
+    const originalArgv = process.argv
+    process.argv = argv
+
+    try {
+      const fileUrl = pathToFileURL(tempFile).href
+      return (await import(fileUrl)) as TModule
+    } finally {
+      process.argv = originalArgv
+    }
   } finally {
-    process.argv = originalArgv
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
 }
 

@@ -1,6 +1,25 @@
 # Changelog
 
 
+## v0.0.2
+
+[compare changes](https://github.com/Sunny-117/gono/compare/v0.0.1...v0.0.2)
+
+### 📖 Documentation
+
+- Node version ([b54e412](https://github.com/Sunny-117/gono/commit/b54e412))
+- Update node version require ([f8a3941](https://github.com/Sunny-117/gono/commit/f8a3941))
+
+### 🏡 Chore
+
+- Update playground ([d694068](https://github.com/Sunny-117/gono/commit/d694068))
+- Docs ([1f7d8cd](https://github.com/Sunny-117/gono/commit/1f7d8cd))
+- Update dependencies and add logging ([c6caa85](https://github.com/Sunny-117/gono/commit/c6caa85))
+
+### ❤️ Contributors
+
+- Sunny-117 <zhiqiangfu6@gmail.com>
+
 ## v0.0.1
 
 
